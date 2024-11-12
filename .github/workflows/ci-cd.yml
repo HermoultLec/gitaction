@@ -2,8 +2,8 @@ name: CI-CD
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
+
 jobs:
   build-and-test:
     name: Build and Test
@@ -13,49 +13,68 @@ jobs:
     # env:
     #  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
     #  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Setup Latest Yarn
         uses: threeal/setup-yarn-action@v2.0.0
         with:
           version: 4.4.1
+
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           cache: 'yarn'
-      - name: dependencies
+
+      - name: Install
         run: yarn install
-      - name: test
+
+      - name: Test
         run: yarn test
-      - name: build
+
+      - name: Build
         run: yarn build
-  docker:
+
+  deploy-docker-hub:
+    name: deploy in docker hub
+    needs: build-and-test
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
+
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Build and push api
         uses: docker/build-push-action@v6
         with:
+          platforms: |
+            linux/arm64
           file: ./apps/api/Dockerfile
           push: true
-          tags: adrienlec/imageflowapi:latest
+          tags: adrienlec/imageflow-api:latest
+
       - name: Build and push web
         uses: docker/build-push-action@v6
         with:
+          build-args: |
+            VITE_API_URL=http://api.localhost/v1
+          platforms: |
+            linux/arm64
           file: ./apps/web/Dockerfile
           push: true
-          tags: adrienlec/imageflowweb:latest
+          tags: adrienlec/imageflow-web:latest
