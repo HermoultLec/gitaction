@@ -52,10 +52,10 @@ jobs:
         with:
           file: ./apps/api/Dockerfile
           push: true
-          tags: adrienlec/imageflowapi:latest
+          tags: user/imageflowapi:latest
       - name: Build and push web
         uses: docker/build-push-action@v6
         with:
           file: ./apps/web/Dockerfile
           push: true
-          tags: adrienlec/imageflowweb:latest
+          tags: user/imageflowweb:latest
